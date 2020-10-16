@@ -45,6 +45,7 @@
     $fila = 2;
     if (!is_null($sheet->getCell('A1')) && !is_null($sheet->getCell('A2'))) {
         $codigo = $sheet->getCell('A' . $fila);
+        //hacer mapa
         if (in_array($codigo, $codigos)) {
             $sheet->removeRow($fila);
             $fila--;
@@ -97,15 +98,25 @@
 
             $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
             $crawler = $client->request('GET', $url);
+            
             //Calculo del historico
-            /* $fecha='';
-                   
-                    $historico=$crawler->filter("#tabHistorico");
-                    if($historico->isE){
-                        $fecha = $historico->filter("td")->text();
-                        echo "<p>".$fecha."</p>";
-                    }
-                    */
+            $fecha='';
+            if(!empty($historico=$crawler->filterXPath("//table[@id='tabHistorico']"))){
+              if (!empty($node = $historico->text())){
+                  echo "<hr/>";
+                  echo var_dump($node); 
+                  $fecha = $node;
+                  echo "<hr/>";
+              }
+            }
+            
+            //var_dump($historico);
+
+          /*  if(!empty($historico)){
+            $fecha = $historico->filter("td")->text();
+              echo "<p>".$fecha."</p>";
+            }*/
+                    
             if (in_array($id, $GLOBALS['codigos'])) {
                 $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
             }
@@ -176,7 +187,7 @@
                  'uploadType' => 'multipart'
                ));
     
-           print_r($createdFile);
+          print_r($createdFile);
     
     } else {
            $authUrl = $client->createAuthUrl();
