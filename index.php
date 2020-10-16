@@ -1,3 +1,4 @@
+<?php session_start();?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -144,87 +145,41 @@
 
 
 
-    require_once "base.php";
-
-    /*************************************************
-     * Ensure you've downloaded your oauth credentials
-     ************************************************/
-    if (!$oauth_credentials = getOAuthCredentialsFile()) {
-        echo missingOAuth2CredentialsWarning();
-        return;
-    }
-
-    /************************************************
-     * The redirect URI is to the current page, e.g:
-     * http://localhost:8080/simple-file-upload.php
-     ************************************************/
-    $redirect_uri = 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
-
     $client = new Google_Client();
-    $client->setAuthConfig($oauth_credentials);
-    $client->setRedirectUri($redirect_uri);
-    $client->addScope("https://www.googleapis.com/auth/drive");
-    $service = new Google_Service_Drive($client);
-
-    // add "?logout" to the URL to remove a token from the session
-    if (isset($_REQUEST['logout'])) {
-        unset($_SESSION['upload_token']);
-    }
-
-    /************************************************
-     * If we have a code back from the OAuth 2.0 flow,
-     * we need to exchange that with the
-     * Google_Client::fetchAccessTokenWithAuthCode()
-     * function. We store the resultant access token
-     * bundle in the session, and redirect to ourself.
-     ************************************************/
-    if (isset($_GET['code'])) {
-        $token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
-        $client->setAccessToken($token);
-
-        // store in the session also
-        $_SESSION['upload_token'] = $token;
-
-        // redirect back to the example
-        header('Location: ' . filter_var($redirect_uri, FILTER_SANITIZE_URL));
-    }
-
-    // set the access token as part of the client
-    if (!empty($_SESSION['upload_token'])) {
-        $client->setAccessToken($_SESSION['upload_token']);
-        if ($client->isAccessTokenExpired()) {
-            unset($_SESSION['upload_token']);
-        }
+    // Get your credentials from the console
+    $client->setClientId('1032605733423-mg308q50k5ttk2bcnj5omorv2u6aj95t.apps.googleusercontent.com');
+    $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
+    $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
+    $client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
+    
+    
+    if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
+           if (isset($_GET['code'])) {
+               $client->fetchAccessTokenWithAuthCode($_GET['code']);
+               $_SESSION['access_token'] = $client->getAccessToken();
+           } else
+               $client->setAccessToken($_SESSION['access_token']);
+    
+           $service = new Google_Service_Drive($client);
+    
+           //Insert a file
+           $file = new Google_Service_Drive_DriveFile();
+           $file->setName('fichero.ods');
+           $file->setDescription('Contratos de galicia');
+           $file->setMimeType('application/vnd.oasis.opendocument.spreadsheet');
+    
+           $data = file_get_contents('./odsPrueba.ods');
+    
+           $createdFile = $service->files->create($file, array(
+                 'data' => $data,
+                 'mimeType' => 'application/vnd.oasis.opendocument.spreadsheet',
+                 'uploadType' => 'multipart'
+               ));
+    
+           print_r($createdFile);
+    
     } else {
-        $authUrl = $client->createAuthUrl();
+           $authUrl = $client->createAuthUrl();
+           header('Location: ' . $authUrl);
+           exit();
     }
-
-    /************************************************
-     * If we're signed in then lets try to upload our
-     * file. For larger files, see fileupload.php.
-     ************************************************/
-    if ($_SERVER['REQUEST_METHOD'] == 'POST' && $client->getAccessToken()) {
-        // We'll setup an empty 1MB file to upload.
-        DEFINE("FILE", 'contratosgalicia.txt');
-        if (!file_exists(FILE)) {
-            $fh = fopen(FILE, 'w');
-            fwrite($fh, "!", 1);
-            fclose($fh);
-        }
-
-        // This is uploading a file directly, with no metadata associated.
-        $file = new Google_Service_Drive_DriveFile();
-        $result = $service->files->create(
-            $file,
-            array(
-                'data' => file_get_contents(FILE),
-                'mimeType' => 'application/octet-stream',
-                'uploadType' => 'media'
-            )
-        );
-    }
-    ?>
-
-</body>
-
-</html>
