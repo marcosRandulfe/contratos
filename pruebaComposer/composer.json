@@ -1,0 +1,13 @@
+{
+    "name": "marcos/prueba-composer",
+    "authors": [
+        {
+            "name": "marcosrgdev",
+            "email": "marcosrandulfegarrido@gmail.com"
+        }
+    ],
+    "require": {
+        "phpoffice/common": "^0.2.9",
+        "phpoffice/phpspreadsheet": "^1.15"
+    }
+}
