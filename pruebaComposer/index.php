@@ -76,8 +76,7 @@
         $GLOBALS['numero'] = $fila;
         //Colocación de los nombres de las columnas independientes
         $GLOBALS['sheet']->setCellValue('AG1', 'Fecha última modificación');
-        $sheet->setCellValue('A1', 'id');
-        $sheet->setCellValue('A2', 'último cambio');
+        $sheet->setCellValue('A1', 'id'); 
         $url = "https://www.contratosdegalicia.gal/rss/ultimas-publicacions.rss";
         $file = $url;
         $leer_texto = false;
@@ -112,10 +111,11 @@
                 $url = $data;
                 echo "<p>" . $url . "</p>";
                 $id = get_code($url);
+                echo "<p> Codigo.$id.</p>";
                 $client = new Client();
                 $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
                 $crawler = $client->request('GET', $url);
-
+                
                 //Calculo del historico
                 $fecha = '';
                 if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
@@ -136,6 +136,7 @@
                         $documentos->each(function($node){
                             echo "<p>Inicio documento</p>";
                             echo $node->html();
+
                         });
                         echo "<hr/>";
                     }
@@ -152,7 +153,7 @@
                 
 
 
-                if (in_array($id, $GLOBALS['codigos'])) {
+                /*if (in_array($id, $GLOBALS['codigos'])) {
                     $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
                 }
                 $dt =$crawler->filter("dt");
@@ -167,7 +168,7 @@
                         $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
                         $GLOBALS['letra'] = ++$GLOBALS['letra'];
                     });
-                }
+                }*/
             }
         }
 
