@@ -26,8 +26,45 @@
     $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
     $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
     $client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
-
     if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
+
+        function obtenerDatosContrato($url){
+             //Solicitud a la pagina del contrato
+             $id = get_code($url);
+             $client = new Client();
+             $crawler = $client->request('GET', $url);
+             //Calculo del historico
+             $fecha = '';
+             if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
+                 echo "<hr/>";
+                 var_dump(count($historico));
+                 echo "<hr/>";
+                 if(count($historico)>0){
+                     $fecha = $historico->text();
+                 }
+             }
+             $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
+
+
+             if (in_array($id, $GLOBALS['codigos'])) {
+                 $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
+             }
+             $dt =$crawler->filter("dt");
+             if(count($dt)>0){
+                 $dt->each(function ($node) {
+                     $propiedad = $node->text();
+                     $valor = $node->siblings()->text();
+                     echo "<p>" . $node->text() . "</p>";
+                     echo "<p>" . var_dump($valor) . "</p>";
+                     echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
+                     $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . $GLOBALS['numero'], $valor);
+                     $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
+                     $GLOBALS['letra'] = ++$GLOBALS['letra'];
+                 });
+             }
+        }
+
+
         $codigos = [];
         $id = '';
 
@@ -116,41 +153,7 @@
         function characterData($parser, $data){
             if ($GLOBALS['leer_texto'] == true) {
                 $url = $data;
-                echo "<p>" . $url . "</p>";
-                $id = get_code($url);
-                $client = new Client();
-                $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
-                $crawler = $client->request('GET', $url);
-
-                //Calculo del historico
-                $fecha = '';
-                if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
-                    echo "<hr/>";
-                    var_dump(count($historico));
-                    echo "<hr/>";
-                    if(count($historico)>0){
-                        $fecha = $historico->text();
-                    }
-                }
-                $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
-
-
-                if (in_array($id, $GLOBALS['codigos'])) {
-                    $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
-                }
-                $dt =$crawler->filter("dt");
-                if(count($dt)>0){
-                    $dt->each(function ($node) {
-                        $propiedad = $node->text();
-                        $valor = $node->siblings()->text();
-                        echo "<p>" . $node->text() . "</p>";
-                        echo "<p>" . var_dump($valor) . "</p>";
-                        echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
-                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . $GLOBALS['numero'], $valor);
-                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
-                        $GLOBALS['letra'] = ++$GLOBALS['letra'];
-                    });
-                }
+                obtenerDatosContrato($url);
             }
         }
 
