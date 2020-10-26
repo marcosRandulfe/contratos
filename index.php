@@ -9,11 +9,11 @@
 <body>
     <h1>Contratos de galicia</h1>
     <?php
-    require './vendor/autoload.php';
+    require __DIR__ .'/../vendor/autoload.php';
     use Goutte\Client;
     use Symfony\Component\HttpClient\HttpClient;
     use PhpOffice\PhpSpreadsheet\Spreadsheet;
-    use PhpOffice\PhpSpreadsheet\Writer\Ods as WritterOds;
+    use PhpOffice\PhpSpreadsheet\Writter\Ods;
     use PhpOffice\PhpSpreadsheet\Reader\Ods as ReaderOds;
 
     error_reporting(E_ALL);
@@ -30,53 +30,8 @@
     $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
     $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
     $client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
-    if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])){
-        function obtenerDatosContrato($url){
-             //Solicitud a la pagina del contrato
-             $id = get_code($url);
-             $client = new Client();
-             try{
-                $crawler = $client->request('GET', $url);
-                if($crawler==null){
-                    return false;
-                }
-             }catch(Exception $ex){
-                 return false;
-             }
-                //Calculo del historico
-             $fecha = '';
-             if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
-                 echo "<hr/>";
-                 var_dump(count($historico));
-                 echo "<hr/>";
-                 if(count($historico)>0){
-                     $fecha = $historico->text();
-                 }
-             }
-             $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
-
-
-             if (in_array($id, $GLOBALS['codigos'])) {
-                 $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
-             }
-             $dt =$crawler->filter("dt");
-             if(count($dt)>0){
-                 $dt->each(function ($node) {
-                     $propiedad = $node->text();
-                     $valor = $node->siblings()->text();
-                     echo "<p>" . $node->text() . "</p>";
-                     echo "<p>" . var_dump($valor) . "</p>";
-                     echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
-                     $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . $GLOBALS['numero'], $valor);
-                     $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
-                     $GLOBALS['letra'] = ++$GLOBALS['letra'];
-                 });
-             }
-             return true;
-        }
 
     $codigos = new \Ds\Map();
-
 
     if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
         $codigos = [];
@@ -101,7 +56,7 @@
                 }catch(Exception $ex){
                     return false;
                 }
-                $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
+                $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $numero);
 
                 //Calculo del historico
                 $fecha = '';
@@ -138,13 +93,9 @@
         ini_set('display_errors', '1');
 
 
-        //$inputFileName = './contratosgalicia.ods';
-        /** Load $inputFileName to a Spreadsheet Object  **/
-
         //Se comprueba si la hoja de estilos esta vacia y sino se gurdan los códigos
         $spreadsheet;
         $inputFileName = './contratosgalicia.ods';
-        $num_inicio=0;
         if(file_exists($inputFileName)){
             echo "<p>Existe fichero</p>";
             $reader = new ReaderOds();
@@ -153,7 +104,6 @@
             $spreadsheet = $reader->load($inputFileName);
         }else{
             $spreadsheet = new Spreadsheet();
-            $num_inicio = NUM_INICIO;
         }
         $sheet = $spreadsheet->getActiveSheet();
         $fila = 2;
@@ -170,21 +120,8 @@
             }
             $inicio = min($codigos->keys());
         }
-        $num_inicio= min($codigos);
         $GLOBALS['numero'] = $fila;
-        echo "<p>Var dump num inicio</p>";
-        var_dump($num_inicio);
-        $num_negativos=0;
-       /* while($num_negativos<NUM_MAXIMO_FALLOS && $num_inicio<(NUM_INICIO+100)){
-            echo "<p>En bucle".$num_inicio."</p>";
-            error_log("En bucle".$num_inicio."");
-            $url = URL_BASE.$num_inicio;
-            $resultado=obtenerDatosContrato($url);
-            if($resultado==false){
-                $num_negativos++;
-            }
-            $num_inicio++;
-        }*/
+
          //Colocación de los nombres de las columnas independientes
         $GLOBALS['sheet']->setCellValue('AG' . 0, 'Fecha última modificación');
         $sheet->setCellValue('A1', 'id');
