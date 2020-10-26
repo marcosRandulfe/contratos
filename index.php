@@ -16,9 +16,13 @@
     use PhpOffice\PhpSpreadsheet\Writter\Ods;
     use PhpOffice\PhpSpreadsheet\Reader\Ods as ReaderOds;
 
-    //Constantes
-    define('NOMBRE_FICHERO','contratosgalicia.ods');
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
 
+    //Constantes
+    define('NOMBRE_FICHERO','./contratosgalicia.ods');
+    define('URL_BASE','https://www.contratosdegalicia.gal//licitacion?N=');
+    define('NUM_INICIO', 5000);
     //Subir Fichero
     $client = new Google_Client();
     // Get your credentials from the console
@@ -26,70 +30,69 @@
     $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
     $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
     $client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
+
+    $codigos = new \Ds\Map();
+
+
     if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
-
-        function obtenerDatosContrato($url){
-             //Solicitud a la pagina del contrato
-             $id = get_code($url);
-             $client = new Client();
-             $crawler = $client->request('GET', $url);
-             //Calculo del historico
-             $fecha = '';
-             if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
-                 echo "<hr/>";
-                 var_dump(count($historico));
-                 echo "<hr/>";
-                 if(count($historico)>0){
-                     $fecha = $historico->text();
-                 }
-             }
-             $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
-
-
-             if (in_array($id, $GLOBALS['codigos'])) {
-                 $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
-             }
-             $dt =$crawler->filter("dt");
-             if(count($dt)>0){
-                 $dt->each(function ($node) {
-                     $propiedad = $node->text();
-                     $valor = $node->siblings()->text();
-                     echo "<p>" . $node->text() . "</p>";
-                     echo "<p>" . var_dump($valor) . "</p>";
-                     echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
-                     $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . $GLOBALS['numero'], $valor);
-                     $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
-                     $GLOBALS['letra'] = ++$GLOBALS['letra'];
-                 });
-             }
-        }
-
-
         $codigos = [];
         $id = '';
+        $letra = 'B';
+        $numero = 1;
+        $indice = '';
 
 
-        function get_code($url)
-        {
-            $url_components = parse_url($url);
-            // Use parse_str() function to parse the 
-            // string passed via URL 
-            parse_str($url_components['query'], $params);
-            // Display result 
-            $id = $params['N'];
-            return $id;
+        function leerDatosContrato($numero){
+                $GLOBALS['numero']++;
+                $GLOBALS['letra'] = 'B';
+                $url = URL_BASE.$numero;
+                echo "<p>" . $url . "</p>";
+                //$id = get_code($url);
+                $client = new Client();
+                try{
+                    $crawler = $client->request('GET', $url);
+                    if($crawler==null){
+                        return false;
+                    }
+                }catch(Exception $ex){
+                    return false;
+                }
+                $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
+
+                //Calculo del historico
+                $fecha = '';
+                if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
+                    echo "<hr/>";
+                    var_dump(count($historico));
+                    echo "<hr/>";
+                    if(count($historico)>0){
+                        $fecha = $historico->text();
+                    }
+                }
+                $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
+
+
+               /* if (in_array($id, $GLOBALS['codigos'])) {
+                    $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
+                }*/
+                $dt =$crawler->filter("dt");
+                if(count($dt)>0){
+                    $dt->each(function ($node) {
+                        $propiedad = $node->text();
+                        $valor = $node->siblings()->text();
+                        echo "<p>" . $node->text() . "</p>";
+                        echo "<p>" . var_dump($valor) . "</p>";
+                        echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
+                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . $GLOBALS['numero'], $valor);
+                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
+                        $GLOBALS['letra'] = ++$GLOBALS['letra'];
+                    });
+                }
         }
 
         error_reporting(E_ALL);
         ini_set('display_errors', '1');
 
-
-        // $crawler = $client->request('GET', 'https://www.symfony.com/blog/');
-
-
-
-        //$inputFileName = './contratosgalicia.ods';
-        /** Load $inputFileName to a Spreadsheet Object  **/
 
         //Se comprueba si la hoja de estilos esta vacia y sino se gurdan los códigos
         $spreadsheet;
@@ -105,15 +108,18 @@
         }
         $sheet = $spreadsheet->getActiveSheet();
         $fila = 2;
+        $inicio = NUM_INICIO;
         if (!is_null($sheet->getCell('A1')) && !is_null($sheet->getCell('A2'))) {
             $codigo = $sheet->getCell('A' . $fila);
             //hacer mapa
-            if (in_array($codigo, $codigos)) {
-                $sheet->removeRow($fila);
+            if ($codigos->hasKey($codigo)) {
+                $sheet->removeRow($codigos->get($codigo));
                 $fila--;
             } else {
-                $codigos[] = $codigo;
+                /* @var \Ds\Map() $codigos */
+                $codigos->put($codigo,$fila);
             }
+            $inicio = min($codigos->keys());
         }
         $GLOBALS['numero'] = $fila;
 
@@ -126,38 +132,58 @@
         $leer_texto = false;
         $is_item = false;
         $writter = new Ods($spreadsheet);
-
-        function startElement($parser, $name, $attrs)
-        {
-            if ($name == "ITEM") {
-                $GLOBALS['is_item'] = true;
-                $GLOBALS['numero']++;
-                $GLOBALS['letra'] = 'B';
-            }
-            if ($name === 'LINK' && $GLOBALS['is_item']) {
-                $GLOBALS['leer_texto'] = true;
-            }
-        }
-
-        function endElement($parser, $name)
-        {
-            if ($name === 'LINK') {
-                $GLOBALS['leer_texto'] = false;
-            }
-        }
         $letra = 'B';
         $numero = 1;
         $indice = '';
 
-
-        function characterData($parser, $data){
-            if ($GLOBALS['leer_texto'] == true) {
-                $url = $data;
-                obtenerDatosContrato($url);
-            }
+        $fallos= 0;
+        while($fallos < 500){
+            leerDatosContrato($inicio);
+            $inicio++;
         }
 
-        $xml_parser = xml_parser_create();
+    /*     function characterData($parser, $data){
+                if ($GLOBALS['leer_texto'] == true) {
+                $url = $data;
+                echo "<p>" . $url . "</p>";
+                $id = get_code($url);
+                $client = new Client();
+                $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
+                $crawler = $client->request('GET', $url);
+
+                //Calculo del historico
+                $fecha = '';
+                if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
+                    echo "<hr/>";
+                    var_dump(count($historico));
+                    echo "<hr/>";
+                    if(count($historico)>0){
+                        $fecha = $historico->text();
+                    }
+                }
+                $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
+
+
+                if (in_array($id, $GLOBALS['codigos'])) {
+                    $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
+                }
+                $dt =$crawler->filter("dt");
+                if(count($dt)>0){
+                    $dt->each(function ($node) {
+                        $propiedad = $node->text();
+                        $valor = $node->siblings()->text();
+                        echo "<p>" . $node->text() . "</p>";
+                        echo "<p>" . var_dump($valor) . "</p>";
+                        echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
+                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . $GLOBALS['numero'], $valor);
+                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
+                        $GLOBALS['letra'] = ++$GLOBALS['letra'];
+                    });
+                }
+            }
+        }
+*/
+ /*       $xml_parser = xml_parser_create();
         xml_set_element_handler($xml_parser, "startElement", "endElement");
         xml_set_character_data_handler($xml_parser, "characterData");
         if (!($fp = fopen($file, "r"))) {
@@ -174,6 +200,7 @@
             }
         }
         xml_parser_free($xml_parser);
+*/
         $writter->save(NOMBRE_FICHERO);
 
             if (isset($_GET['code'])) {
@@ -199,7 +226,7 @@
             ));
 
             print_r($createdFile);
-        
+
     } else {
         $authUrl = $client->createAuthUrl();
         header('Location: ' . $authUrl);
