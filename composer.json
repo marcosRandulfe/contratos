@@ -1,5 +1,6 @@
 {
-    "name": "marcos/contratos",
+    "name": "marcos/public-html",
+    "description": "composer",
     "type": "project",
     "authors": [
         {
@@ -8,8 +9,9 @@
         }
     ],
     "require": {
-        "phpoffice/common": "^0.2.9",
         "fabpot/goutte": "^4.0",
-        "google/apiclient": "^2.0"
+        "google/apiclient": "^2.7",
+        "phpoffice/common": "^0.2.9",
+        "phpoffice/phpspreadsheet": "^1.15"
     }
 }

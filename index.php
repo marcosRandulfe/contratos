@@ -9,16 +9,19 @@
 <body>
     <h1>Contratos de galicia</h1>
     <?php
-    require __DIR__ .'/../vendor/autoload.php';
+    require './vendor/autoload.php';
     use Goutte\Client;
     use Symfony\Component\HttpClient\HttpClient;
     use PhpOffice\PhpSpreadsheet\Spreadsheet;
-    use PhpOffice\PhpSpreadsheet\Writter\Ods;
+    use PhpOffice\PhpSpreadsheet\Writer\Ods as WritterOds;
     use PhpOffice\PhpSpreadsheet\Reader\Ods as ReaderOds;
 
     //Constantes
     define('NOMBRE_FICHERO','contratosgalicia.ods');
-
+    define('NUM_INICIO', 5000);
+    define('URL_BASE','https://www.contratosdegalicia.gal//licitacion?N=');
+    define('NUM_MAXIMO_FALLOS',500);
+    echo "<p>Google client</p>";
     //Subir Fichero
     $client = new Google_Client();
     // Get your credentials from the console
@@ -26,14 +29,20 @@
     $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
     $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
     $client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
-    if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
-
+    if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])){
         function obtenerDatosContrato($url){
              //Solicitud a la pagina del contrato
              $id = get_code($url);
              $client = new Client();
-             $crawler = $client->request('GET', $url);
-             //Calculo del historico
+             try{
+                $crawler = $client->request('GET', $url);
+                if($crawler==null){
+                    return false;
+                }
+             }catch(Exception $ex){
+                 return false;
+             }
+                //Calculo del historico
              $fecha = '';
              if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
                  echo "<hr/>";
@@ -62,6 +71,7 @@
                      $GLOBALS['letra'] = ++$GLOBALS['letra'];
                  });
              }
+             return true;
         }
 
 
@@ -84,16 +94,13 @@
         ini_set('display_errors', '1');
 
 
-        // $crawler = $client->request('GET', 'https://www.symfony.com/blog/');
-
-
-
         //$inputFileName = './contratosgalicia.ods';
         /** Load $inputFileName to a Spreadsheet Object  **/
 
         //Se comprueba si la hoja de estilos esta vacia y sino se gurdan los códigos
         $spreadsheet;
         $inputFileName = './contratosgalicia.ods';
+        $num_inicio=0;
         if(file_exists($inputFileName)){
             echo "<p>Existe fichero</p>";
             $reader = new ReaderOds();
@@ -102,6 +109,7 @@
             $spreadsheet = $reader->load($inputFileName);
         }else{
             $spreadsheet = new Spreadsheet();
+            $num_inicio = NUM_INICIO;
         }
         $sheet = $spreadsheet->getActiveSheet();
         $fila = 2;
@@ -115,8 +123,21 @@
                 $codigos[] = $codigo;
             }
         }
+        $num_inicio= min($codigos);
         $GLOBALS['numero'] = $fila;
-
+        echo "<p>Var dump num inicio</p>";
+        var_dump($num_inicio);
+        $num_negativos=0;
+       /* while($num_negativos<NUM_MAXIMO_FALLOS && $num_inicio<(NUM_INICIO+100)){
+            echo "<p>En bucle".$num_inicio."</p>";
+            error_log("En bucle".$num_inicio."");
+            $url = URL_BASE.$num_inicio;
+            $resultado=obtenerDatosContrato($url);
+            if($resultado==false){
+                $num_negativos++;
+            }
+            $num_inicio++;
+        }*/
          //Colocación de los nombres de las columnas independientes
         $GLOBALS['sheet']->setCellValue('AG' . 0, 'Fecha última modificación');
         $sheet->setCellValue('A1', 'id');
@@ -125,55 +146,8 @@
         $file = $url;
         $leer_texto = false;
         $is_item = false;
-        $writter = new Ods($spreadsheet);
-
-        function startElement($parser, $name, $attrs)
-        {
-            if ($name == "ITEM") {
-                $GLOBALS['is_item'] = true;
-                $GLOBALS['numero']++;
-                $GLOBALS['letra'] = 'B';
-            }
-            if ($name === 'LINK' && $GLOBALS['is_item']) {
-                $GLOBALS['leer_texto'] = true;
-            }
-        }
-
-        function endElement($parser, $name)
-        {
-            if ($name === 'LINK') {
-                $GLOBALS['leer_texto'] = false;
-            }
-        }
-        $letra = 'B';
-        $numero = 1;
-        $indice = '';
-
-
-        function characterData($parser, $data){
-            if ($GLOBALS['leer_texto'] == true) {
-                $url = $data;
-                obtenerDatosContrato($url);
-            }
-        }
-
-        $xml_parser = xml_parser_create();
-        xml_set_element_handler($xml_parser, "startElement", "endElement");
-        xml_set_character_data_handler($xml_parser, "characterData");
-        if (!($fp = fopen($file, "r"))) {
-            die("could not open XML input");
-        }
-
-        while ($data = fread($fp, 4096)) {
-            if (!xml_parse($xml_parser, $data, feof($fp))) {
-                die(sprintf(
-                    "XML error: %s at line %d",
-                    xml_error_string(xml_get_error_code($xml_parser)),
-                    xml_get_current_line_number($xml_parser)
-                ));
-            }
-        }
-        xml_parser_free($xml_parser);
+        $writter = new WritterOds($spreadsheet);
+       
         $writter->save(NOMBRE_FICHERO);
 
             if (isset($_GET['code'])) {
