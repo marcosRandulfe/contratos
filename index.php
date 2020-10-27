@@ -13,8 +13,8 @@
     use Goutte\Client;
     use Symfony\Component\HttpClient\HttpClient;
     use PhpOffice\PhpSpreadsheet\Spreadsheet;
-    use PhpOffice\PhpSpreadsheet\Writter\Ods;
-    use PhpOffice\PhpSpreadsheet\Reader\Ods as ReaderOds;
+    use PhpOffice\PhpSpreadsheet\Writter\Ods as Writter;
+    use PhpOffice\PhpSpreadsheet\Reader\Ods as Reader;
 
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -30,7 +30,6 @@
     $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
     $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
     $client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
-
     $codigos = new \Ds\Map();
 
     if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
@@ -98,7 +97,7 @@
         $inputFileName = './contratosgalicia.ods';
         if(file_exists($inputFileName)){
             echo "<p>Existe fichero</p>";
-            $reader = new ReaderOds();
+            $reader = new Reader();
             //$spreadsheet = IOhoja::load('./odsPrueba.ods');
             $inputFileName = './contratosgalicia.ods';
             $spreadsheet = $reader->load($inputFileName);
@@ -130,7 +129,7 @@
         $file = $url;
         $leer_texto = false;
         $is_item = false;
-        $writter = new Ods($spreadsheet);
+        $writter = new \PhpOffice\PhpSpreadsheet\Writer($spreadsheet);
         $letra = 'B';
         $numero = 1;
         $indice = '';
