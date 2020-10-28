@@ -9,12 +9,12 @@
 <body>
     <h1>Contratos de galicia</h1>
     <?php
-    require __DIR__ .'/../vendor/autoload.php';
+    require './vendor/autoload.php';
     use Goutte\Client;
     use Symfony\Component\HttpClient\HttpClient;
+    use PhpOffice\PhpSpreadsheet\Reader\Ods;
+    use PhpOffice\PhpSpreadsheet\Writer\Ods as Writter;
     use PhpOffice\PhpSpreadsheet\Spreadsheet;
-    use PhpOffice\PhpSpreadsheet\Writter\Ods as Writter;
-    use PhpOffice\PhpSpreadsheet\Reader\Ods as Reader;
 
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -33,27 +33,28 @@
     $codigos = new \Ds\Map();
 
     if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
-        $codigos = [];
+        $codigos = new \Ds\Map();
         $id = '';
         $letra = 'B';
-        $numero = 1;
+        $numero = 2;
         $indice = '';
 
-
         function leerDatosContrato($numero){
-                $GLOBALS['numero']++;
                 $GLOBALS['letra'] = 'B';
                 $url = URL_BASE.$numero;
-                echo "<p>" . $url . "</p>";
-                //$id = get_code($url);
+                echo "<p>jjj" . $url . "</p>";
                 $client = new Client();
+                $peticionCorrecta = true;
                 try{
                     $crawler = $client->request('GET', $url);
                     if($crawler==null){
-                        return false;
+                        $peticionCorrecta=false;
                     }
                 }catch(Exception $ex){
-                    return false;
+                    $peticionCorrecta=false;
+                }
+                if (!$peticionCorrecta) {
+                    return $peticionCorrecta;
                 }
                 $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $numero);
 
@@ -69,10 +70,6 @@
                 }
                 $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
 
-
-               /* if (in_array($id, $GLOBALS['codigos'])) {
-                    $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
-                }*/
                 $dt =$crawler->filter("dt");
                 if(count($dt)>0){
                     $dt->each(function ($node) {
@@ -86,6 +83,7 @@
                         $GLOBALS['letra'] = ++$GLOBALS['letra'];
                     });
                 }
+                $GLOBALS['numero']++;
         }
 
         error_reporting(E_ALL);
@@ -97,7 +95,7 @@
         $inputFileName = './contratosgalicia.ods';
         if(file_exists($inputFileName)){
             echo "<p>Existe fichero</p>";
-            $reader = new Reader();
+            $reader = new Ods();
             //$spreadsheet = IOhoja::load('./odsPrueba.ods');
             $inputFileName = './contratosgalicia.ods';
             $spreadsheet = $reader->load($inputFileName);
@@ -117,88 +115,34 @@
                 /* @var \Ds\Map() $codigos */
                 $codigos->put($codigo,$fila);
             }
-            $inicio = min($codigos->keys());
+            echo "<p> Claves:".min($codigos->keys()->toArray())."</p>";
+            $inicio = min($codigos->keys()->toArray());
         }
         $GLOBALS['numero'] = $fila;
 
          //Colocación de los nombres de las columnas independientes
         $GLOBALS['sheet']->setCellValue('AG' . 0, 'Fecha última modificación');
         $sheet->setCellValue('A1', 'id');
-        $sheet->setCellValue('A2', 'último cambio');
+        $sheet->setCellValue('B1', 'último cambio');
         $url = "https://www.contratosdegalicia.gal/rss/ultimas-publicacions.rss";
         $file = $url;
         $leer_texto = false;
         $is_item = false;
-        $writter = new \PhpOffice\PhpSpreadsheet\Writer($spreadsheet);
+        $writter = new Writter($spreadsheet);
         $letra = 'B';
         $numero = 1;
         $indice = '';
 
         $fallos= 0;
-        while($fallos < 500){
-            leerDatosContrato($inicio);
-            $inicio++;
-        }
-
-    /*     function characterData($parser, $data){
-                if ($GLOBALS['leer_texto'] == true) {
-                $url = $data;
-                echo "<p>" . $url . "</p>";
-                $id = get_code($url);
-                $client = new Client();
-                $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
-                $crawler = $client->request('GET', $url);
-
-                //Calculo del historico
-                $fecha = '';
-                if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))){
-                    echo "<hr/>";
-                    var_dump(count($historico));
-                    echo "<hr/>";
-                    if(count($historico)>0){
-                        $fecha = $historico->text();
-                    }
-                }
-                $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
-
-
-                if (in_array($id, $GLOBALS['codigos'])) {
-                    $GLOBALS['sheet']->setCellValue('A' . $GLOBALS['numero'], $id);
-                }
-                $dt =$crawler->filter("dt");
-                if(count($dt)>0){
-                    $dt->each(function ($node) {
-                        $propiedad = $node->text();
-                        $valor = $node->siblings()->text();
-                        echo "<p>" . $node->text() . "</p>";
-                        echo "<p>" . var_dump($valor) . "</p>";
-                        echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
-                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . $GLOBALS['numero'], $valor);
-                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
-                        $GLOBALS['letra'] = ++$GLOBALS['letra'];
-                    });
-                }
+        $num_inicio=500000;
+        while($fallos < 2000){
+            $resultado=leerDatosContrato($num_inicio);
+            if (!$resultado) {
+                $fallos++;
             }
-        }
-*/
- /*       $xml_parser = xml_parser_create();
-        xml_set_element_handler($xml_parser, "startElement", "endElement");
-        xml_set_character_data_handler($xml_parser, "characterData");
-        if (!($fp = fopen($file, "r"))) {
-            die("could not open XML input");
+            $num_inicio++;
         }
 
-        while ($data = fread($fp, 4096)) {
-            if (!xml_parse($xml_parser, $data, feof($fp))) {
-                die(sprintf(
-                    "XML error: %s at line %d",
-                    xml_error_string(xml_get_error_code($xml_parser)),
-                    xml_get_current_line_number($xml_parser)
-                ));
-            }
-        }
-        xml_parser_free($xml_parser);
-*/
         $writter->save(NOMBRE_FICHERO);
 
             if (isset($_GET['code'])) {
