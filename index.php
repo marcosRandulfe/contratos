@@ -16,23 +16,26 @@
     use PhpOffice\PhpSpreadsheet\Writer\Ods as Writter;
     use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
+    ini_set('max_execution_time', 400); //300 seconds = 5 minutes
+    set_time_limit(400);
+
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
 
     //Constantes
     define('NOMBRE_FICHERO','./contratosgalicia.ods');
     define('URL_BASE','https://www.contratosdegalicia.gal//licitacion?N=');
-    define('NUM_INICIO', 5000);
+    define('NUM_INICIO', 50000);
     //Subir Fichero
-    $client = new Google_Client();
+    //$client = new Google_Client();
     // Get your credentials from the console
-    $client->setClientId('1032605733423-mg308q50k5ttk2bcnj5omorv2u6aj95t.apps.googleusercontent.com');
-    $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
-    $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
-    $client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
+    //$client->setClientId('1032605733423-mg308q50k5ttk2bcnj5omorv2u6aj95t.apps.googleusercontent.com');
+    //$client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
+    //$client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
+    //$client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
     $codigos = new \Ds\Map();
 
-    if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
+   // if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
         $codigos = new \Ds\Map();
         $id = '';
         $letra = 'B';
@@ -74,7 +77,12 @@
                 if(count($dt)>0){
                     $dt->each(function ($node) {
                         $propiedad = $node->text();
-                        $valor = $node->siblings()->text();
+                        $valor= "";
+                        try{
+                            $valor = $node->siblings()->text();
+                        }catch(Exception $ex){
+
+                        }
                         echo "<p>" . $node->text() . "</p>";
                         echo "<p>" . var_dump($valor) . "</p>";
                         echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
@@ -88,7 +96,6 @@
 
         error_reporting(E_ALL);
         ini_set('display_errors', '1');
-
 
         //Se comprueba si la hoja de estilos esta vacia y sino se gurdan los códigos
         $spreadsheet;
@@ -136,6 +143,7 @@
         $fallos= 0;
         $num_inicio=500000;
         while($fallos < 2000){
+            echo "<p>En el while</p>";
             $resultado=leerDatosContrato($num_inicio);
             if (!$resultado) {
                 $fallos++;
@@ -144,7 +152,7 @@
         }
 
         $writter->save(NOMBRE_FICHERO);
-
+/*
             if (isset($_GET['code'])) {
                 $client->fetchAccessTokenWithAuthCode($_GET['code']);
                 $_SESSION['access_token'] = $client->getAccessToken();
@@ -168,9 +176,10 @@
             ));
 
             print_r($createdFile);
-
-    } else {
+*/
+/*    } else {
         $authUrl = $client->createAuthUrl();
         header('Location: ' . $authUrl);
         exit();
     }
+*/
