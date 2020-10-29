@@ -15,9 +15,14 @@
     use PhpOffice\PhpSpreadsheet\Reader\Ods;
     use PhpOffice\PhpSpreadsheet\Writer\Ods as Writter;
     use PhpOffice\PhpSpreadsheet\Spreadsheet;
+    use Cache\Adapter\Apcu\ApcuCachePool;
 
-    ini_set('max_execution_time', 400); //300 seconds = 5 minutes
-    set_time_limit(400);
+   // $pool = new ApcuCachePool();
+   // $simpleCache = new \Cache\Bridge\SimpleCache\SimpleCacheBridge($pool);
+   // \PhpOffice\PhpSpreadsheet\Settings::setCache($simpleCache);
+
+    ini_set('max_execution_time', 600); //300 seconds = 5 minutes
+    set_time_limit(600);
 
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
@@ -33,10 +38,12 @@
     //$client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
     //$client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
     //$client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
-    $codigos = new \Ds\Map();
+   /// $codigos = new \Ds\Map();
+    
+    $codigos = new SQLite3('./codigos.db');
 
    // if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
-        $codigos = new \Ds\Map();
+        //$codigos = new \Ds\Map();
         $id = '';
         $letra = 'B';
         $numero = 2;
@@ -115,15 +122,31 @@
         if (!is_null($sheet->getCell('A1')) && !is_null($sheet->getCell('A2'))) {
             $codigo = $sheet->getCell('A' . $fila);
             //hacer mapa
-            if ($codigos->hasKey($codigo)) {
-                $sheet->removeRow($codigos->get($codigo));
+            $sql="SELECT codigo, fila FROM codigo WHERE codigo='".$codigo."';";
+            $resultado = $GLOBALS['codigos']->query($sql);
+            $row = $resultado->fetchArray(SQLITE3_ASSOC);
+            if ($row) {
+                $cod_fila = $row['fila'];
+                $sheet->removeRow($cod_fila);
                 $fila--;
             } else {
                 /* @var \Ds\Map() $codigos */
-                $codigos->put($codigo,$fila);
+                $sql = 'INSERT INTO codigo('.$codigo.','.$fila.');';
+                $GLOBALS['codigos']->query($sql);
             }
-            echo "<p> Claves:".min($codigos->keys()->toArray())."</p>";
-            $inicio = min($codigos->keys()->toArray());
+            /*
+             * echo "<p> Claves:".min($codigos->keys()->toArray())."</p>";
+             * $inicio = min($codigos->keys()->toArray());
+            */
+            $sql = 'SELECT min(codigo) FROM codigo;';
+            $resultado=$GLOBALS['codigos']->query($sql);
+            $row = $resultado->fetchArray(SQLITE3_ASSOC);
+        
+            if($row){
+                $fila=$row['codigo'];
+            }else{
+                $fila=0;
+            }
         }
         $GLOBALS['numero'] = $fila;
 
@@ -135,22 +158,23 @@
         $file = $url;
         $leer_texto = false;
         $is_item = false;
-        $writter = new Writter($spreadsheet);
+        
         $letra = 'B';
         $numero = 1;
         $indice = '';
 
         $fallos= 0;
         $num_inicio=500000;
-        while($fallos < 2000){
+        while($fallos < 5000){
             echo "<p>En el while</p>";
             $resultado=leerDatosContrato($num_inicio);
+            //$spreadsheet->garbageCollect();
             if (!$resultado) {
                 $fallos++;
             }
             $num_inicio++;
         }
-
+        $writter = new Writter($spreadsheet);
         $writter->save(NOMBRE_FICHERO);
 /*
             if (isset($_GET['code'])) {
