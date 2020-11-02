@@ -15,16 +15,21 @@
         use Symfony\Component\HttpClient\HttpClient;
         use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
         use Box\Spout\Common\Entity\Row;
-        //use PhpOffice\PhpSpreadsheet\Reader\Ods;
-        //use PhpOffice\PhpSpreadsheet\Writer\Ods as Writter;
-        //use PhpOffice\PhpSpreadsheet\Spreadsheet;
-        //use Cache\Adapter\Apcu\ApcuCachePool;
+        
         use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 
-//$pool = new ApcuCachePool();
-        //$simpleCache = new \Cache\Bridge\SimpleCache\SimpleCacheBridge($pool);
-        //\PhpOffice\PhpSpreadsheet\Settings::setCache($simpleCache);
-
+        $inputFileName = './contratosgalicia.ods';
+        $writer = WriterEntityFactory::createODSWriter();
+        $writer->openToFile($inputFileName);
+        $GLOBALS['reader']=false;
+     /* 
+      * $reader = ReaderEntityFactory::createODSReader();
+      *  $sheet=$reader->getSheetIterator()->current();
+      */ 
+        
+        // Variable para contar el número de filas
+        $num_fila_actual=1;
+        
         ini_set('max_execution_time', 600); //300 seconds = 5 minutes
         set_time_limit(600);
 
@@ -47,20 +52,47 @@
         $codigos = new SQLite3('./codigos.db');
 
         // if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
-        //$codigos = new \Ds\Map();
-        $id = '';
-        $letra = 'B';
-        $numero = 2;
-        $indice = '';
+        //$id = '';
+        //$indice = '';  
+        
+        /**
+         * 
+         * @param type $codigo
+         * @return Numero de fila o false
+         */
+        function comprobarCodigo($codigo){
+            $sql ="SELECT fila FROM codigo WHERE codigo='".$codigo."';";
+            $resultado=$GLOBALS['codigos']->query($sql);
+            if($row = $resultado->fetchArray()){
+                return $row['fila'];
+            }
+            return false;
+        }
 
-        function cambiarFila($numFila,$datos) {
-            foreach ($sheet->getRowIterator() as $rowIndex => $row) {
-                
+        function insertarFila($datos) {
+            $exist_row=false;
+            $sheet=$GLOBALS['writer']->getCurrentSheet();
+            echo "<p> Datos: </p>";
+            var_dump($datos);
+            $fila = comprobarCodigo($datos[0]);
+            if($fila==false){
+                $GLOBALS['writer']->addRow(WriterEntityFactory::createRowFromArray($datos));
+            }else{
+                $reader =$GLOBALS['reader'];
+                $sheet=$reader->getSheetIterator()->current();
+                foreach ($sheet->getRowIterator() as $rowIndex => $row) {
+                    if($rowIndex==$fila){
+                        $exist_row=true;
+                        $cells = WriterEntityFactory::createRowFromArray($datos)->getCells();
+                        $row->setCells($cells);
+                    }
+                }
             }
         }
 
         function leerDatosContrato($numero) {
-            $GLOBALS['letra'] = 'B';
+            global $datos_funcion;
+            $datos_funcion=[];
             $url = URL_BASE . $numero;
             echo "<p>jjj" . $url . "</p>";
             $client = new Client();
@@ -76,8 +108,7 @@
             if (!$peticionCorrecta) {
                 return $peticionCorrecta;
             }
-             $numero = $GLOBALS['numero'];
-             $numero
+            $datos_funcion[]=$numero;
 
             //Calculo del historico
             $fecha = '';
@@ -89,47 +120,52 @@
                     $fecha = $historico->text();
                 }
             }
-            $GLOBALS['sheet']->setCellValue('AG' . $GLOBALS['numero'], $fecha);
-
+            $datos_funcion[]=$fecha;
             $dt = $crawler->filter("dt");
             if (count($dt) > 0) {
-                $dt->each(function ($node) {
-                    $propiedad = $node->text();
-                    $valor = "";
-                    try {
-                        $valor = $node->siblings()->text();
-                    } catch (Exception $ex) {
-                        
-                    }
-                    echo "<p>" . $node->text() . "</p>";
-                    echo "<p>" . var_dump($valor) . "</p>";
-                    echo "<p>Fila y columna: " . $GLOBALS['letra'] . $GLOBALS['numero'] . "</p>";
-                    $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . $GLOBALS['numero'], $valor);
-                    if ($GLOBALS['numero'] < 3) {
-                        $GLOBALS['sheet']->setCellValue($GLOBALS['letra'] . '1', $propiedad);
-                    }
-                    $GLOBALS['letra'] = ++$GLOBALS['letra'];
+                $dt->each(
+                    function ($node) {
+                        $propiedad = $node->text();
+                        $valor = "";
+                        try {
+                            $valor = $node->siblings()->text();
+                        } catch (Exception $ex) {
+
+                        }
+                        echo "<p>" . $node->text() . "</p>";
+                        echo "<p>" . $valor . "</p>";
+                        $datos_funcion[]=$valor;
+                        array_push($GLOBALS['datos_funcion'],$valor);
+                        echo "<h1>Datos cosas</h1>";
+                        var_dump($GLOBALS['datos_funcion']);
                 });
             }
-            $GLOBALS['numero']++;
+            insertarFila($datos_funcion);
         }
-
+        
         error_reporting(E_ALL);
         ini_set('display_errors', '1');
 
         //Se comprueba si la hoja de estilos esta vacia y sino se gurdan los códigos
         $spreadsheet;
-        $inputFileName = './contratosgalicia.ods';
+       
         if (file_exists($inputFileName)) {
             echo "<p>Existe fichero</p>";
             $reader = ReaderEntityFactory::createReaderFromFile($inputFileName);
+            $GLOBALS['reader']=$reader;
+            //var_dump($reader);
             $reader->open($inputFileName);
+            var_dump($reader);
             $numFila = 1;
             $inicio = NUM_INICIO;
-            foreach ($reader->getSheetIterator() as $sheet) {
-                foreach ($sheet->getRowIterator() as $row) {
-                    if ($numFila > 1) {
+            $sheet=$reader->getSheetIterator()->current();
+            $GLOBALS['sheet_lectura']=$sheet;
+                foreach ($sheet->getRowIterator() as $rowIndex => $row) {
+                    if ($rowIndex> 1) {
                         $cells = $row->getCells();
+                        if(empty($cells)){
+                            break;
+                        }
                         $codigo = $cells[0]->getValue();
                         $filaHoja = $cells[1]->getValue();
                         $sql = "SELECT codigo, fila FROM codigo WHERE codigo='" . $codigo . "';";
@@ -141,29 +177,14 @@
                             $GLOBALS['codigos']->query($sql);
                         }
                     }
-                    $numFila++;
+                    $numFila=$rowIndex;
                 }
-            }
-            /*
-             * Seleccionar el numero mínimo 
-             */
-            $sql = 'SELECT min(codigo) FROM codigo;';
-            $resultado = $GLOBALS['codigos']->query($sql);
-            $row = $resultado->fetchArray(SQLITE3_ASSOC);
-
-            if ($row) {
-                $fila = $row['codigo'];
-            } else {
-                $fila = 0;
-            }
+            $GLOBALS['num_fila_actual']=$numFila;
         }
 
-        $GLOBALS['numero'] = $fila;
-
-
-        $writer = WriterEntityFactory::createODSWriter();
-        $writter->openToFile($inputFileName);
+       if($numFila<=1){
         $cells = ['id',
+                'Historico(ultima modificacion)',
                 'obxeto',
                 'Tipo de procedemento',
                 'Nº de lotes',
@@ -189,35 +210,28 @@
                 'Hora do rexistro presentación',
                 'Documentación de inicio',
                 'Documentación pregos',
-                'Documentación outros',
-                'Historico(ultima modificacion)'
+                'Documentación outros'
             ];
+        $row = WriterEntityFactory::createRowFromArray($cells);
+        $writer->addRow($row);
+       }
         
-        //Colocación de los nombres de las columnas independientes
-        //$GLOBALS['sheet']->setCellValue('AG' . 0, 'Fecha última modificación');
-        //$sheet->setCellValue('A1', 'id');
-        //$sheet->setCellValue('B1', 'último cambio');
         $url = "https://www.contratosdegalicia.gal/rss/ultimas-publicacions.rss";
-        $file = $url;
         $leer_texto = false;
-        $is_item = false;
-
-        $letra = 'B';
-        $numero = 1;
-        $indice = '';
 
         $fallos = 0;
-        $num_inicio = 500000;
-        while ($fallos < 5000) {
+        $num_contrato = 700000;
+        while ($fallos < 5000 && $num_contrato<700800) {
             echo "<p>En el while</p>";
-            $resultado = leerDatosContrato($num_inicio);
+            $resultado = leerDatosContrato($num_contrato);
             if (!$resultado) {
                 $fallos++;
             } else {
         
             }
-            $num_inicio++;
+            $num_contrato++;
         }
+        $writer->close();
         //$writter = new Writter($spreadsheet);
         //$writter->save(NOMBRE_FICHERO);
         /*
@@ -251,3 +265,4 @@
         exit();
     }
 */
+        
