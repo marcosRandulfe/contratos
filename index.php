@@ -18,6 +18,23 @@
         
         use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 
+    // -----------------------------------------------------------------------------------
+    // ShareWithUser
+    // -----------------------------------------------------------------------------------
+    function addShared($service, $fileId, $userEmail, $role ){
+        // role can be reader, writer, etc
+        $userPermission = new Google_Service_Drive_Permission(array(
+            'type' => 'user',
+            'role' => $role,
+            'emailAddress' => $userEmail
+        ));
+        
+        $request = $service->permissions->create(
+            $fileId, $userPermission, array('fields' => 'id')
+        );
+    }
+        
+        
         $inputFileName = './contratosgalicia.ods';
         $writer = WriterEntityFactory::createODSWriter();
         $writer->openToFile($inputFileName);
@@ -41,17 +58,16 @@
         define('URL_BASE', 'https://www.contratosdegalicia.gal//licitacion?N=');
         define('NUM_INICIO', 50000);
         //Subir Fichero
-        //$client = new Google_Client();
+        $client = new Google_Client();
         // Get your credentials from the console
-        //$client->setClientId('1032605733423-mg308q50k5ttk2bcnj5omorv2u6aj95t.apps.googleusercontent.com');
-        //$client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
-        //$client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
-        //$client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
-        /// $codigos = new \Ds\Map();
+        $client->setClientId('1032605733423-mg308q50k5ttk2bcnj5omorv2u6aj95t.apps.googleusercontent.com');
+        $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
+        $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
+        $client->setScopes(array('https://www.googleapis.com/auth/drive.file', Google_Service_Gmail::GMAIL_SEND));
 
         $codigos = new SQLite3('./codigos.db');
 
-        // if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
+        if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
         //$id = '';
         //$indice = '';  
         
@@ -78,7 +94,7 @@
             if($fila==false){
                 $GLOBALS['writer']->addRow(WriterEntityFactory::createRowFromArray($datos));
             }else{
-                $reader =$GLOBALS['reader'];
+                $reader = $GLOBALS['reader'];
                 $sheet=$reader->getSheetIterator()->current();
                 foreach ($sheet->getRowIterator() as $rowIndex => $row) {
                     if($rowIndex==$fila){
@@ -221,7 +237,7 @@
 
         $fallos = 0;
         $num_contrato = 700000;
-        while ($fallos < 5000 && $num_contrato<700800) {
+        while ($fallos < 5000 && $num_contrato<702000) {
             echo "<p>En el while</p>";
             $resultado = leerDatosContrato($num_contrato);
             if (!$resultado) {
@@ -232,9 +248,8 @@
             $num_contrato++;
         }
         $writer->close();
-        //$writter = new Writter($spreadsheet);
-        //$writter->save(NOMBRE_FICHERO);
-        /*
+        
+       
             if (isset($_GET['code'])) {
                 $client->fetchAccessTokenWithAuthCode($_GET['code']);
                 $_SESSION['access_token'] = $client->getAccessToken();
@@ -248,7 +263,7 @@
             $file->setName('fichero.ods');
             $file->setDescription('Contratos de galicia');
             $file->setMimeType('application/vnd.oasis.opendocument.spreadsheet');
-
+            $fileId=$file->getId();
             $data = file_get_contents(NOMBRE_FICHERO);
 
             $createdFile = $service->files->create($file, array(
@@ -256,13 +271,12 @@
                 'mimeType' => 'application/vnd.oasis.opendocument.spreadsheet',
                 'uploadType' => 'multipart'
             ));
-
-            print_r($createdFile);
-*/
-/*    } else {
+            addShared($service,$createdFile->getId(), "marcoss.mrgmrg.rg392@gmail.com", "reader");        
+           
+    } else {
         $authUrl = $client->createAuthUrl();
         header('Location: ' . $authUrl);
         exit();
     }
-*/
+
         
