@@ -1,5 +1,6 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
+echo __DIR__;
+require __DIR__.'/vendor/autoload.php';
 
 //use Google\Auth\Client;
 
@@ -27,7 +28,7 @@ if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['acce
        $file->setDescription('Contratos de galicia');
        $file->setMimeType('application/vnd.oasis.opendocument.spreadsheet');
 
-       $data = file_get_contents('./odsPrueba.ods');
+       $data = file_get_contents('./contratosgalicia.ods');
 
        $createdFile = $service->files->create($file, array(
              'data' => $data,

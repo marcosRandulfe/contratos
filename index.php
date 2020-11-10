@@ -9,13 +9,12 @@
     <body>
         <h1>Contratos de galicia</h1>
         <?php
-        require './vendor/autoload.php';
+        require __DIR__.'/vendor/autoload.php';
 
         use Goutte\Client;
         use Symfony\Component\HttpClient\HttpClient;
         use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
         use Box\Spout\Common\Entity\Row;
-        
         use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 
     // -----------------------------------------------------------------------------------
@@ -63,7 +62,7 @@
         $client->setClientId('1032605733423-mg308q50k5ttk2bcnj5omorv2u6aj95t.apps.googleusercontent.com');
         $client->setClientSecret('7h7-1DW0g85balewwYRI8x8b');
         $client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
-        $client->setScopes(array('https://www.googleapis.com/auth/drive.file', Google_Service_Gmail::GMAIL_SEND));
+        $client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
 
         $codigos = new SQLite3('./codigos.db');
 
@@ -77,7 +76,16 @@
          * @return Numero de fila o false
          */
         function comprobarCodigo($codigo){
-            $sql ="SELECT fila FROM codigo WHERE codigo='".$codigo."';";
+            $sql ="SELECT fila FROM codigos WHERE codigo='".$codigo."';";
+            $resultado=$GLOBALS['codigos']->query($sql);
+            if($row = $resultado->fetchArray()){
+                return $row['fila'];
+            }
+            return false;
+        }
+
+        function insertarCodigo($fila,$codigo){
+            $sql ="SELECT fila FROM codigos WHERE codigo='".$codigo."';";
             $resultado=$GLOBALS['codigos']->query($sql);
             if($row = $resultado->fetchArray()){
                 return $row['fila'];
@@ -184,8 +192,7 @@
                         }
                         $codigo = $cells[0]->getValue();
                         $filaHoja = $cells[1]->getValue();
-                        $sql = "SELECT codigo, fila FROM codigo WHERE codigo='" . $codigo . "';";
-                        $resultado = $GLOBALS['codigos']->query($sql);
+                        $resultado = comprobarCodigo($codigo);
                         $row = $resultado->fetchArray(SQLITE3_ASSOC);
                         if (!$row) {
                             /* @var \Ds\Map() $codigos */
@@ -202,6 +209,7 @@
         $cells = ['id',
                 'Historico(ultima modificacion)',
                 'obxeto',
+                'Tipo de tramitación',
                 'Tipo de procedemento',
                 'Nº de lotes',
                 'Orzamento base de licitación',
@@ -237,7 +245,7 @@
 
         $fallos = 0;
         $num_contrato = 700000;
-        while ($fallos < 5000 && $num_contrato<702000) {
+        while ($fallos < 5000 && $num_contrato<705000) {
             echo "<p>En el while</p>";
             $resultado = leerDatosContrato($num_contrato);
             if (!$resultado) {
