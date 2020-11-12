@@ -18,6 +18,27 @@
         
         use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
 
+
+
+         /**
+         * 
+         * @param type $codigo
+         * @return Numero de fila o false
+         */
+        function comprobarCodigo($codigo){
+            $sql ="SELECT fila FROM codigos WHERE codigo='".$codigo."';";
+            $resultado=$GLOBALS['codigos']->query($sql);
+            if($row = $resultado->fetchArray()){
+                return $row['fila'];
+            }
+            return false;
+        }
+
+        function insertarCodigo($codigo,$fila){
+            $sql="INSERT INTO codigos VALUES(".$codigo.",".$fila.")"; 
+            $resultado=$GLOBALS['codigos']->query($sql);
+        }
+
     // -----------------------------------------------------------------------------------
     // ShareWithUser
     // -----------------------------------------------------------------------------------
@@ -68,8 +89,6 @@
         $codigos = new SQLite3('./codigos.db');
 
         if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
-        //$id = '';
-        //$indice = '';  
         
         /**
          * 
@@ -126,7 +145,6 @@
             }
             $datos_funcion[]=$numero;
 
-            //Calculo del historico
             $fecha = '';
             if (!empty($historico = $crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]"))) {
                 echo "<hr/>";
@@ -169,7 +187,6 @@
             echo "<p>Existe fichero</p>";
             $reader = ReaderEntityFactory::createReaderFromFile($inputFileName);
             $GLOBALS['reader']=$reader;
-            //var_dump($reader);
             $reader->open($inputFileName);
             var_dump($reader);
             $numFila = 1;
@@ -188,7 +205,6 @@
                         $resultado = $GLOBALS['codigos']->query($sql);
                         $row = $resultado->fetchArray(SQLITE3_ASSOC);
                         if (!$row) {
-                            /* @var \Ds\Map() $codigos */
                             $sql = 'INSERT INTO codigo VALUES (' . $codigo . ',' . $fila . ');';
                             $GLOBALS['codigos']->query($sql);
                         }
@@ -202,6 +218,7 @@
         $cells = ['id',
                 'Historico(ultima modificacion)',
                 'obxeto',
+                'Tipo de tramitación',
                 'Tipo de procedemento',
                 'Nº de lotes',
                 'Orzamento base de licitación',
@@ -237,7 +254,7 @@
 
         $fallos = 0;
         $num_contrato = 700000;
-        while ($fallos < 5000 && $num_contrato<702000) {
+        while ($fallos < 5000 && $num_contrato<700003) {
             echo "<p>En el while</p>";
             $resultado = leerDatosContrato($num_contrato);
             if (!$resultado) {
