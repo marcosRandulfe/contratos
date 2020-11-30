@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "contratosgalicia-292610",
+  "private_key_id": "3968bf5a00d228dc320dd1ee8ede1043cbaafbd9",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCsTJA4OlodikyZ\nJK3afPR5UNPLfG4NkUmjrypXNg6eSluuqIG4MGB4/RzDp+dddJrIdi1ghfDBrrjj\nvqreysvtSk4pcB/JB9gl5XjR0jyFby7p5RudsZKWeyZ7EOE+TTOX/6smECEpHJBz\nvTyn2OtuHp4zuvyz4zJPa6ZxvXEhIgLZsMh7Qe051W2UH1AAqz3TU9O45eGIEIrr\nsRrlBLqP9+rxYUH9tKAAK4nXF/sFUIfrtBnnL//kSvxy/AyDNp2CRio+rnaKPcpD\nogvG40KDYoXfPAiNwrwEYEJbJQPlc/BaWlf37KpzOVvxNFWjyRVkLgwpXX5PM2T1\nvjpNwK5vAgMBAAECggEAQbjQuEn1ztfOoQnfMPzB6jadGzzi49T8EG5ECdEqYVG+\nyBAprv7xBaWS38T/mWPdmMKPS4a7z71cdC7qEaKsh950kxTcYvvVhJsT64E0qbc/\n32MPlibCYhkmlAHb0T50hDG3cITtiTeGmEdiSCoTn8UZFmVoeBudOLM44aDf8sFc\nRROZQ8y2tH602qZUPNxhpaAlZgbdxQPGtWSPToSp+YEczmeniuG/cdha0y0rdTqt\nAkW7MYNyu8dH9ohKl48+wI5xLz6+EOJ0Vco4MuzqYOgPm5Ik0K8Nqsq3xNedyR7Z\nLc6LlO+68XozXXK6Q78Y1KSPukYs/mW7r8p17psE8QKBgQDiZxUK7rxOuJvlaI4m\nhksHORyUgFfPIyKm0IPu5kEPoYWGuG0bWupKQnWw8cdaVJWaeCTnHhBOvpnZfACh\nGU25RCjvnK8VysiJLc6jypQwOCakmwTxLSicCQzf2iBFlWyKsTFBk4WDxbsrS5dK\nWLa7uEKVYZB16liv2eMjtPZVUQKBgQDC0tH94FoSJmBDcmeUxvly2l15lJWsJza3\nAoeYLR0YDG+CvUSaCsk0gmImIqF0mwTKaJbWlj3qJOiLy3OnQupGpt+o9UkFJj97\n0Auy72Y/e3+gZ/ur25faYLwNsMrLq0gZcDR8haQJsyOfp1aKWUwclsYmBQFDJhO4\noZ9RD1DXvwKBgDQPfBk9eHOpo7+G4VkefFY23cmQEaEB9U/iltPygndzrt6hvgUS\nTNmympmLn0m4NYaFpga3NQzGa15FU2e4B9VYRQmEQAaE0MQqkl+7j4PfBZPIScSj\nm7j1o849vDoD+CeUQz1PDN6WM0nrYeioqaxU3Iq5GpzivG4DbmWhkRthAoGBAKGZ\nr5ePdgbiEC1CA0s0NIuhN7H2nqP6rvbkwUZn/V8KSaC/j9zan4TPtcv+I8COKU4f\nrSZ33wmN7dqvOtJ9vcg2+QSz2QrNbBEuQ9X7n+t+bCHIvsgR0QbSAIq2n7CK9bYs\nDU1QqP1mu2Dds/n0Eh8QrXGx6xcgyXD3lyfstVkPAoGAJr7NHWpgre37oVi0ZmiS\nSYgserkDizEDYpjkpJStFXmL3fAjYu7clZFN4bsorHgZ5iZZw3FUG1wmEVX7YFq8\nrhBXG6LUm2kWuRDRv2vy1WUC487nltSmlCessxz/xGX6Rb7f4kbjt2BNQX1Yhgbn\nbx13/SX7jL1oKBRY3oSU1fA=\n-----END PRIVATE KEY-----\n",
+  "client_email": "cuentaservicio@contratosgalicia-292610.iam.gserviceaccount.com",
+  "client_id": "107392986634651828128",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/cuentaservicio%40contratosgalicia-292610.iam.gserviceaccount.com"
+}
