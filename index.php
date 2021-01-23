@@ -19,8 +19,8 @@
                     $filename = $name. $increment . '.' . $ext;
                 }
                 rename($oldname,$filename);
-        }   
-        
+        }
+
         function delete_olders($inicio){
             // 1 mes -> 2595600
             $ficheros= scandir('.');
@@ -31,14 +31,14 @@
                          unlink($ficheros[$i]);
                     }
                 }
-            } 
+            }
         }
 
-        
+
 
 
         /**
-         * 
+         *
          * @param type $codigo
          * @return Numero de fila o false
          */
@@ -66,13 +66,13 @@
             'role' => $role,
             'emailAddress' => $userEmail
         ));
-        
+
         $service->permissions->create(
             $fileId, $userPermission, array('fields' => 'id')
         );
     }
 
-        
+
         $inputFileName = __DIR__.'/contratosgalicia.ods';
         if(file_exists($inputFileName)){
             renameExistingFile($inputFileName);
@@ -81,7 +81,7 @@
         $writer = WriterEntityFactory::createODSWriter();
         $writer->openToFile($inputFileName);
         $GLOBALS['reader']=false;
-        
+
         ini_set('max_execution_time', 60000);
         set_time_limit(6000);
 
@@ -94,7 +94,7 @@
         define('NUM_INICIO', 70000);
         //Subir Fichero
         putenv('GOOGLE_APPLICATION_CREDENTIALS='.__DIR__.'/contratosgalicia.json');
-    
+
         $googleClient = new \Google\Client();
         $googleClient->useApplicationDefaultCredentials();
         $googleClient->addScope(Google_Service_Drive::DRIVE);
@@ -105,7 +105,7 @@
         //$codigos =  mysqli_connect("localhost", "marcos", "abc123", "codigos") or die;
         //$codigos = new Flintstone('codigos', ['dir' => __DIR__, 'formatter' => new JsonFormatter()]);
         //$maximo = new Flintstone('maximo',['dir' => __DIR__, 'formatter' => new JsonFormatter()]);
-       
+
         function putMaximo($max){
             $sql ="INSERT INTO codigos VALUES(-1,".$max.")";
             $GLOBALS['codigos']->query($sql);
@@ -121,8 +121,8 @@
             }
             return false;
         }
-       
-       
+
+
         function insertarFila($datos) {
             $sheet=$GLOBALS['writer']->getCurrentSheet();
             $fila = comprobarCodigo($datos[0]);
@@ -146,7 +146,6 @@
             global $datos_funcion;
             $datos_funcion=[];
             $url = URL_BASE . $numero;
-            //echo "<p>url: " . $url . "</p>";
             $client = $GLOBALS['client'];
             $peticionCorrecta = true;
             try {
@@ -170,10 +169,10 @@
                 }
             }
             $datos_funcion[]=$fecha;
-            $dt = $crawler->filter("dt");
-            if (count($dt) > 0) {
-                $dt->each(
-                    function ($node) {
+            $dl = $crawler->filter("dl");
+            if (count($dl) > 0) {
+                $dl->each(
+                    function($node) {
                         $valor = "";
                         try {
                             $valor = $node->siblings()->text();
@@ -188,16 +187,17 @@
                         //var_dump($GLOBALS['datos_funcion']);
                 });
             }
+            //Faltan datos tablas
             insertarFila($datos_funcion);
             return true;
         }
-        
+
         error_reporting(E_ALL);
         ini_set('display_errors', '1');
 
         //Se comprueba si la hoja de estilos esta vacia y sino se gurdan los códigos
         $spreadsheet;
-       
+
         /*if (file_exists($inputFileName)) {
             echo "<p>Existe fichero</p>";
             $reader = ReaderEntityFactory::createReaderFromFile($inputFileName);
@@ -216,7 +216,7 @@
                             break;
                         }
                         $codigo = $cells[0];
-                        insertarCodigo($codigo,$rowIndex);                        
+                        insertarCodigo($codigo,$rowIndex);
                     }
                 }
            $GLOBALS['num_fila_actual']=$rowIndex;
@@ -224,11 +224,6 @@
 
         // Renombrar el fichero si ya existe
 
-
-
-
-
-       
         $cells = ['id',
                 'Historico(ultima modificacion)',
                 'obxeto',
@@ -261,34 +256,37 @@
             ];
         $row = WriterEntityFactory::createRowFromArray($cells);
         $writer->addRow($row);
-        
-        $url = "https://www.contratosdegalicia.gal/rss/ultimas-publicacions.rss";
-        $leer_texto = false;
-        $nummaximo=getMaximo();
-        //echo "<h1>Número máximo: $nummaximo</h1>";
-        $fallos = 0; 
-        $num_contrato = 770000;
-        
-        if($nummaximo!=false){
-            $num_contrato=$nummaximo;
-        }
-        $limite= $num_contrato+4000;
-        while ($fallos < 300 && $num_contrato<$limite) {
-            $resultado = leerDatosContrato($num_contrato);
-            if (!$resultado) {
-                $fallos++;
-            } else {
-        
-            }
-            $num_contrato++;
-        }
-        putMaximo($num_contrato);
-        $writer->close();
-       
-       
-        $service = new Google_Service_Drive($googleClient);
 
-            
+        $url = "https://www.contratosdegalicia.gal/rss/ultimas-publicacions.rss";
+        $feed = simplexml_load_file("https://www.contratosdegalicia.gal/rss/ultimas-publicacions.rss");
+        $leer_texto = false;
+        //Número en el que empieza el fichero
+        //$nummaximo=getMaximo();
+        //$fallos = 0;
+        //$num_contrato = 770000;
+
+        if($feed!=false){
+            echo "<p>feed</p>";
+            var_dump($feed);
+            echo "<p>feed</p>";
+            $enlace = $feed->channel->item[0]->link;
+            $num_contratos = preg_split("/N=/",$enlace);
+        }
+
+        echo "Num contratos:";
+        echo var_dump($num_contratos);
+        $num_contrato = $num_contratos[1];
+        $limite = $num_contratos[1]-40;
+
+        while ($num_contrato>$limite) {
+            $resultado = leerDatosContrato($num_contrato);
+            $num_contrato--;
+        }
+        //putMaximo($num_contrato);
+        $writer->close();
+
+
+        $service = new Google_Service_Drive($googleClient);
 
             //Insert a file
             $file = new Google_Service_Drive_DriveFile();
@@ -302,8 +300,8 @@
                 'data' => $data,
                 'mimeType' => 'application/vnd.oasis.opendocument.spreadsheet',
                 'uploadType' => 'multipart'
-            ));  
+            ));
             addShared($service,$createdFile->getId(), "marcosrandulfegarrido@gmail.com", "writer");
-            addShared($service,$createdFile->getId(), "jaime.barreiro.laredo@gmail.com", "writer");
+           // addShared($service,$createdFile->getId(), "jaime.barreiro.laredo@gmail.com", "writer");
 
 exit();

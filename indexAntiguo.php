@@ -39,7 +39,7 @@
     //$client->setRedirectUri('http://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF']);
     //$client->setScopes(array('https://www.googleapis.com/auth/drive.file'));
    /// $codigos = new \Ds\Map();
-    
+
     $codigos = new SQLite3('./codigos.db');
 
    // if (isset($_GET['code']) || (isset($_SESSION['access_token']) && $_SESSION['access_token'])) {
@@ -143,7 +143,7 @@
             $sql = 'SELECT min(codigo) FROM codigo;';
             $resultado=$GLOBALS['codigos']->query($sql);
             $row = $resultado->fetchArray(SQLITE3_ASSOC);
-        
+
             if($row){
                 $fila=$row['codigo'];
             }else{
@@ -160,7 +160,7 @@
         $file = $url;
         $leer_texto = false;
         $is_item = false;
-        
+
         $letra = 'B';
         $numero = 1;
         $indice = '';
@@ -196,7 +196,7 @@
 
             $data = file_get_contents(NOMBRE_FICHERO);
 
-            $createdFile = $service->files->create($file, array(
+            $createdFile = $servi$feedce->files->create($file, array(
                 'data' => $data,
                 'mimeType' => 'application/vnd.oasis.opendocument.spreadsheet',
                 'uploadType' => 'multipart'
