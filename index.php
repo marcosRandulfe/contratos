@@ -159,7 +159,7 @@
             } catch (Exception $ex) {
                 $peticionCorrecta = false;
             }
-            if (!$peticionCorrecta) {
+            if ($peticionCorrecta==false) {
                 return $peticionCorrecta;
             }
             $datos_funcion[]=$numero;
