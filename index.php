@@ -6,6 +6,8 @@
         use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
         use Box\Spout\Common\Entity\Row;
         use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
+        use PhpOffice\PhpSpreadsheet\Spreadsheet;
+        use PhpOffice\PhpSpreadsheet\Writer;
 
         // Variable para contar el número de filas
         $num_fila_actual=2;
@@ -33,9 +35,6 @@
                 }
             }
         }
-
-
-
 
         /**
          *
@@ -123,7 +122,7 @@
         }
 
 
-        function insertarFila($datos) {
+        function insertarFila($datos){
             $sheet=$GLOBALS['writer']->getCurrentSheet();
             $fila = comprobarCodigo($datos[0]);
             if($fila==false){
@@ -141,13 +140,17 @@
                 }
             }
         }
+
         $client= new Client();
         function leerDatosContrato($numero) {
-            global $datos_funcion;
+            //$GLOBALS['fila_ordenada']= $GLOBALS['cells'];
+            $GLOBALS['fila_ordenada'] = [];
+            //global $datos_funcion;
             $datos_funcion=[];
-            $url = URL_BASE . $numero;
+            $url = URL_BASE.$numero;
             $client = $GLOBALS['client'];
             $peticionCorrecta = true;
+            $GLOBALS['fila_ordenada']['id']=$numero;
             try {
                 $crawler = $client->request('GET', $url);
                 if ($crawler == null) {
@@ -160,7 +163,6 @@
                 return $peticionCorrecta;
             }
             $datos_funcion[]=$numero;
-
             $fecha = '';
             $historico=$crawler->filterXPath("//table[@id='tabHistorico']//tr[1]//td[1]");
             if (!empty($historico)) {
@@ -168,30 +170,61 @@
                     $fecha = $historico->text();
                 }
             }
+            $GLOBALS['fila_ordenada']['fecha']=$fecha;
             $datos_funcion[]=$fecha;
+         //   $fila_ordenada['']=
             $dl = $crawler->filter("dl");
             if (count($dl) > 0) {
                 $dl->each(
-                    function($node) {
+                    function($node){
                         $valor = "";
                         try {
-                            $valor = $node->siblings()->text();
+                            $datos = [];
+                            $definicion = $node->filter("dt");
+                            $valor = $node->filter("dd");
+                            echo"\n";
+                            echo "Definicion: ".$definicion->text();
+                            echo "\n";
+                            echo "Valor: ".$valor->text();
+                            $datos[$definicion->text()]=$valor->text();
+                            if(!in_array($definicion->text(),$GLOBALS['fila_ordenada'])){
+                                //array_push($GLOBALS['fila_ordenada'],$definicion->text());
+                            }
+                            $GLOBALS['fila_ordenada'][$definicion->text()]=$valor->text();
+                            //$valor = $node->siblinogs()->text();
+                            //array_push($GLOBALS['fila_ordenada'],$definicion);
                         } catch (Exception $ex) {
 
                         }
                         //echo "<p>" . $node->text() . "</p>";
                         //echo "<p>" . $valor . "</p>";
-                        $datos_funcion[]=$valor;
-                        array_push($GLOBALS['datos_funcion'],$valor);
+                        //array_push($GLOBALS['datos_funcion'],$valor);
                         //echo "<h1>Datos cosas</h1>";
                         //var_dump($GLOBALS['datos_funcion']);
                 });
             }
             //Faltan datos tablas
-            insertarFila($datos_funcion);
+            echo "\nDatos Funcion\n";
+            var_dump($GLOBALS['fila_ordenada']);
+            echo "\nClaves función\n";
+            var_dump(array_keys($GLOBALS['fila_ordenada']));
+            insertarFila(array_values($GLOBALS['fila_ordenada']));
             return true;
         }
 
+        /*function ponerCabecera(){
+             $inputFileName = __DIR__.'/contratosgalicia.ods';
+            if(isset($GLOBALS['writer'])){
+                $GLOBALS['writer']->close();
+            }
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader("Ods");
+            $spreadsheet = $reader->load($inputFileName);
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet,"Ods");
+            $llaves=array_keys($GLOBALS['fila_ordenada']);
+            $spreadsheet->getActiveSheet()->fromArray($llaves,NULL,'A1');
+            $writer->save($spreadsheet);
+        }
+*/
         error_reporting(E_ALL);
         ini_set('display_errors', '1');
 
@@ -225,31 +258,32 @@
         // Renombrar el fichero si ya existe
 
         $cells = ['id',
-                'Historico(ultima modificacion)',
-                'obxeto',
+                'Historico(última modificación)',
+                'Obxecto',
                 'Tipo de tramitación',
                 'Tipo de procedemento',
-                'Nº de lotes',
-                'Orzamento base de licitación',
                 'Tipo de contrato',
-                'Sistemas de contratación',
+                'Orzamento base de licitación',
+                'Nº lotes',
+                'Contrato SARA',
+                'Contratación centralizada',
                 'Compra pública estratéxica',
-                'Data de difusión en Contratos Públicos de Galicia',
-                'Selo',
-                'data publicación perfil',
-                'data publicación bop',
-                'data publicación dog',
-                'data publicación boe',
-                'data publicación doue',
-                'código cpv',
-                'Lote cpv',
-                'data difusión',
-                'NUT',
-                'Lote NUT',
-                'Data difusión nut',
-                'Lugar de presentación',
-                'Data e hora(presentación)',
-                'Hora do rexistro presentación',
+                'Valor estimado',
+                'Sistema de contratación',
+                'Observacións',
+                'Enderezo do acordo marco:',
+                'Operadores',
+                'Máximo',
+                'Prazo execución acordo marco',
+                'Enderezos dos derivados do acordo marco:',
+                'Data de difusión en Contratos Públicos de Galicia:',
+                'Data e hora:',
+                'Enderezo electrónico:',
+                'Enderezo electrónico:',
+                'Observacións:',
+                'Modificado:',
+                'Prórroga:',
+                'Valor estimado',
                 'Documentación de inicio',
                 'Documentación pregos',
                 'Documentación outros'
@@ -266,9 +300,10 @@
         //$num_contrato = 770000;
 
         if($feed!=false){
-            echo "<p>feed</p>";
+            /*echo "<p>feed</p>";
             var_dump($feed);
             echo "<p>feed</p>";
+            */
             $enlace = $feed->channel->item[0]->link;
             $num_contratos = preg_split("/N=/",$enlace);
         }
@@ -276,15 +311,16 @@
         echo "Num contratos:";
         echo var_dump($num_contratos);
         $num_contrato = $num_contratos[1];
-        $limite = $num_contratos[1]-40;
+        $limite = $num_contratos[1]-6000;
 
         while ($num_contrato>$limite) {
             $resultado = leerDatosContrato($num_contrato);
             $num_contrato--;
         }
+
         //putMaximo($num_contrato);
         $writer->close();
-
+        //ponerCabecera();
 
         $service = new Google_Service_Drive($googleClient);
 
